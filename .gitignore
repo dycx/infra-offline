@@ -1,0 +1,25 @@
+# Maven
+**/target/
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tar.gz
+*.rpm
+*.class
+*.log
+
+# Temporary
+tmp/
