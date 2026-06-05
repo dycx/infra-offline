@@ -25,3 +25,4 @@ offline/tugraph-4.5.2-1.el7.x86_64.rpm
 
 # Temporary
 tmp/
+lgraph.pid

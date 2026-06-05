@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -49,6 +50,13 @@ public class TuGraphClient {
         this.props = props;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        // Don't throw on 4xx/5xx — we handle status codes ourselves
+        this.restTemplate.setErrorHandler(new org.springframework.web.client.ResponseErrorHandler() {
+            @Override
+            public boolean hasError(ClientHttpResponse response) { return false; }
+            @Override
+            public void handleError(ClientHttpResponse response) {}
+        });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -67,6 +75,12 @@ public class TuGraphClient {
 
     /**
      * Execute a Cypher query on a specific graph.
+     *
+     * <p>TuGraph returns results in columnar format:
+     * <pre>{@code
+     * {"header": [{"name": "n", "type": 0}], "result": [[1], [2]], "size": 2}
+     * }</pre>
+     * This method converts the columnar result to a list of maps keyed by column name.</p>
      */
     public List<Map<String, Object>> callCypher(String cypher, String graph) {
         Map<String, Object> body = Map.of(
@@ -74,23 +88,89 @@ public class TuGraphClient {
                 "graph", graph,
                 "timeout", 0
         );
-        JsonNode resp = post("/cypher", body);
-        JsonNode result = resp.path("result");
-        if (result.isArray()) {
-            return objectMapper.convertValue(result, new TypeReference<>() {});
+        JsonNode resp;
+        try {
+            resp = post("/cypher", body);
+        } catch (HttpStatusException e) {
+            // TuGraph returns HTTP 500 for query errors (e.g. non-existent labels)
+            // Return empty list rather than propagating
+            return List.of();
         }
-        // single-element result wrapped differently
-        return List.of(Map.of("result", result.asText()));
+        JsonNode resultArr = resp.path("result");
+        JsonNode headerArr = resp.path("header");
+
+        if (!resultArr.isArray() || resultArr.size() == 0) {
+            return List.of();
+        }
+
+        // Build column name list from header
+        List<String> columns = new ArrayList<>();
+        if (headerArr.isArray()) {
+            for (JsonNode col : headerArr) {
+                columns.add(col.path("name").asText());
+            }
+        }
+
+        // Convert each row (JSON array) to a map keyed by column name
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (JsonNode row : resultArr) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            if (row.isArray()) {
+                for (int i = 0; i < row.size(); i++) {
+                    String colName = i < columns.size() ? columns.get(i) : "col" + i;
+                    JsonNode val = row.get(i);
+                    if (val.isNull()) {
+                        map.put(colName, null);
+                    } else if (val.isInt() || val.isLong()) {
+                        map.put(colName, val.asLong());
+                    } else if (val.isDouble() || val.isFloat()) {
+                        map.put(colName, val.asDouble());
+                    } else if (val.isBoolean()) {
+                        map.put(colName, val.asBoolean());
+                    } else {
+                        map.put(colName, val.asText());
+                    }
+                }
+            }
+            rows.add(map);
+        }
+        return rows;
     }
 
     /**
-     * Import a graph schema.
+     * Import a graph schema via Cypher CALL db.createVertexLabel / createEdgeLabel.
      *
-     * @param graph       target graph name
-     * @param description schema JSON string
+     * @param graph  target graph name
+     * @param label  label name
+     * @param primaryField  primary key field name
+     * @param fields  additional fields as "name, type" pairs (e.g. "age, INT32, true")
      */
+    public void createVertexLabel(String graph, String label, String primaryField, String... fields) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CALL db.createVertexLabel('").append(label)
+          .append("', '").append(primaryField).append("', '").append(primaryField)
+          .append("', 'STRING', false");
+        for (int i = 0; i < fields.length; i++) {
+            String f = fields[i];
+            // Boolean fields: "true"/"false" → true/false (unquoted)
+            if (f.equals("true") || f.equals("false")) {
+                sb.append(", ").append(f);
+            } else {
+                sb.append(", '").append(f).append("'");
+            }
+        }
+        sb.append(")");
+        callCypher(sb.toString(), graph);
+    }
+
+    /**
+     * @deprecated Use createVertexLabel for schema creation. The import_schema
+     * REST endpoint varies by TuGraph version.
+     */
+    @Deprecated
     public JsonNode importSchema(String graph, String description) {
-        return post("/import_schema", Map.of("graph", graph, "description", description));
+        return post("/db/" + graph + "/schema/text",
+                Map.of("graph", graph, "description", description));
     }
 
     /**
@@ -222,6 +302,11 @@ public class TuGraphClient {
                 invalidateToken();
                 throw new UnauthorizedException("Token expired, will retry");
             }
+            if (!resp.getStatusCode().is2xxSuccessful()) {
+                throw new HttpStatusException(resp.getStatusCode().value(),
+                        "TuGraph returned HTTP " + resp.getStatusCode().value()
+                        + (resp.getBody() != null ? ": " + resp.getBody() : ""));
+            }
             return parseResponse(resp);
         });
     }
@@ -316,6 +401,12 @@ public class TuGraphClient {
 
     private static class UnauthorizedException extends RuntimeException {
         UnauthorizedException(String msg) { super(msg); }
+    }
+
+    static class HttpStatusException extends RuntimeException {
+        private final int statusCode;
+        HttpStatusException(int statusCode, String msg) { super(msg); this.statusCode = statusCode; }
+        int getStatusCode() { return statusCode; }
     }
 
     public static class TuGraphException extends RuntimeException {
