@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════
+# Demo 服务 Deployment — 展示如何在 K8s 中使用 tugraph-starter
+# ═══════════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tugraph-demo-service
+  namespace: default
+  labels:
+    app: tugraph-demo-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tugraph-demo-service
+  template:
+    metadata:
+      labels:
+        app: tugraph-demo-service
+    spec:
+      containers:
+        - name: app
+          image: your-registry/tugraph-demo-service:1.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            # ── 从 ConfigMap 注入连接参数 ──
+            - name: TUGRAPH_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tugraph-config
+                  key: url
+            - name: TUGRAPH_DEFAULT_GRAPH
+              valueFrom:
+                configMapKeyRef:
+                  name: tugraph-config
+                  key: default-graph
+            # ── 从 Secret 注入凭据 ──
+            - name: TUGRAPH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tugraph-credentials
+                  key: username
+            - name: TUGRAPH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tugraph-credentials
+                  key: password
+          # ── K8s 健康探针 ──
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tugraph-demo-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: tugraph-demo-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

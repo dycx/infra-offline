@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════════
+# K8s Secret — TuGraph 认证凭据
+# ═══════════════════════════════════════════════════════════════
+# 生产环境建议用 sealed-secrets 或外部密钥管理
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tugraph-credentials
+  namespace: default
+type: Opaque
+stringData:
+  username: admin
+  password: "73@TuGraph"
+---
+# ═══════════════════════════════════════════════════════════════
+# K8s ConfigMap — TuGraph 连接参数
+# ═══════════════════════════════════════════════════════════════
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tugraph-config
+  namespace: default
+data:
+  url: "http://tugraph-db:7070"
+  bolt-url: "bolt://tugraph-db:7687"
+  default-graph: "default"
+---
+# ═══════════════════════════════════════════════════════════════
+# K8s Service — TuGraph 统一访问入口
+# ═══════════════════════════════════════════════════════════════
+# 如果 TuGraph 在 K8s 集群内以 Pod 运行，用 selector 方式:
+#
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: tugraph-db
+# spec:
+#   type: ClusterIP
+#   selector:
+#     app: tugraph-db
+#   ports:
+#     - name: rest
+#       port: 7070
+#       targetPort: 7070
+#     - name: bolt
+#       port: 7687
+#       targetPort: 7687
+#     - name: rpc
+#       port: 9090
+#       targetPort: 9090
+#
+# 如果 TuGraph 在 K8s 集群外 (物理机/虚拟机)，用 Endpoints 方式:
+apiVersion: v1
+kind: Service
+metadata:
+  name: tugraph-db
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+    - name: rest
+      port: 7070
+      targetPort: 7070
+      protocol: TCP
+    - name: bolt
+      port: 7687
+      targetPort: 7687
+      protocol: TCP
+    - name: rpc
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+---
+# Endpoints 指向集群外 TuGraph 实例 (替换为实际 IP)
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: tugraph-db
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 192.168.1.100   # ← 替换为 TuGraph 服务器实际 IP
+    ports:
+      - name: rest
+        port: 7070
+      - name: bolt
+        port: 7687
+      - name: rpc
+        port: 9090
