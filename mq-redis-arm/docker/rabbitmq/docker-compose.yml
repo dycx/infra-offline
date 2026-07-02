@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    build: .
+    image: rabbitmq:3.13-offline
+    container_name: rabbitmq
+    restart: unless-stopped
+    hostname: rabbitmq
+    ports:
+      - "${RMQ_AMQP_PORT:-5672}:5672"
+      - "${RMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - ./data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-admin123}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# 构建: docker compose build (需 RPM + Dockerfile + entrypoint.sh 在同目录)
+# 启动: docker compose up -d
