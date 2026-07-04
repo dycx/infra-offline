@@ -14,6 +14,9 @@ echo "  Grafana    → http://localhost:3000 (admin/admin123)"
 kubectl port-forward -n middleware svc/rabbitmq 15672:15672 &
 echo "  RabbitMQ   → http://localhost:15672 (admin/admin123)"
 
+kubectl port-forward -n middleware svc/mysql 3306:3306 &
+echo "  MySQL      → localhost:3306 (root/root123)"
+
 kubectl port-forward -n kubernetes-dashboard svc/kubernetes-dashboard 8443:443 &
 echo "  Dashboard  → https://localhost:8443"
 
