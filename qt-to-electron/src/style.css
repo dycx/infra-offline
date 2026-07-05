@@ -1,0 +1,141 @@
+/* ============================================================
+   全局样式
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #f5f6fa;
+}
+
+/* ── 登录页 ────────────────────────────────────────────── */
+
+.login-container {
+  display: flex; justify-content: center; align-items: center;
+  height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.login-box {
+  text-align: center; background: #fff; padding: 48px 40px;
+  border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  width: 380px;
+}
+
+.login-box h1 { font-size: 28px; margin-bottom: 8px; }
+.subtitle { color: #888; margin-bottom: 32px; }
+.hint { color: #aaa; font-size: 12px; margin-top: 20px; line-height: 1.6; }
+.status-text { margin-top: 16px; color: #667eea; min-height: 20px; }
+
+/* ── 按钮 ──────────────────────────────────────────────── */
+
+.btn-primary {
+  width: 100%; padding: 12px; border: none; border-radius: 8px;
+  background: #667eea; color: #fff; font-size: 16px; cursor: pointer;
+}
+.btn-primary:hover { background: #5a6fd6; }
+.btn-primary:disabled { background: #b3b9f0; cursor: not-allowed; }
+
+.btn-sm { padding: 4px 12px; border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; cursor: pointer; font-size: 12px; margin: 0 4px; }
+.btn-sm:hover { background: #f0f0f0; }
+.btn-danger { color: #e74c3c; border-color: #e74c3c; }
+
+/* ── 导航栏 ────────────────────────────────────────────── */
+
+.navbar {
+  display: flex; align-items: center; padding: 0 24px;
+  height: 56px; background: #fff; border-bottom: 1px solid #eee;
+}
+.brand { font-size: 18px; font-weight: 600; color: #667eea; margin-right: 32px; }
+.nav-tabs { display: flex; gap: 4px; flex: 1; }
+
+.tab {
+  padding: 8px 20px; border: none; background: none;
+  font-size: 14px; cursor: pointer; color: #666; border-radius: 6px;
+}
+.tab:hover { background: #f0f0f0; }
+.tab.active { background: #667eea; color: #fff; }
+
+.btn-logout {
+  padding: 6px 16px; border: 1px solid #ddd; border-radius: 6px;
+  background: #fff; font-size: 13px; cursor: pointer; color: #999;
+}
+.btn-logout:hover { color: #e74c3c; border-color: #e74c3c; }
+
+/* ── 仪表盘 ────────────────────────────────────────────── */
+
+.dashboard {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  padding: 24px;
+}
+.stat-card {
+  background: #fff; padding: 32px; border-radius: 10px;
+  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.stat-value { font-size: 36px; font-weight: 700; color: #667eea; }
+.stat-label { font-size: 14px; color: #999; margin-top: 8px; }
+
+/* ── 数据页 ────────────────────────────────────────────── */
+
+.data-page { padding: 24px; }
+
+.toolbar {
+  display: flex; gap: 12px; margin-bottom: 16px;
+}
+.toolbar input {
+  flex: 1; max-width: 300px; padding: 8px 12px;
+  border: 1px solid #ddd; border-radius: 6px; font-size: 14px;
+}
+.toolbar button {
+  padding: 8px 16px; border: 1px solid #ddd; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 13px;
+}
+.toolbar button:hover { background: #f0f0f0; }
+#btn-add { background: #667eea; color: #fff; border-color: #667eea; }
+
+/* ── 表格 ──────────────────────────────────────────────── */
+
+#data-table {
+  width: 100%; border-collapse: collapse; background: #fff;
+  border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+#data-table th {
+  text-align: left; padding: 12px 16px;
+  background: #fafafa; font-weight: 600; color: #666; font-size: 13px;
+  border-bottom: 1px solid #eee;
+}
+#data-table td {
+  padding: 12px 16px; border-bottom: 1px solid #f5f5f5; font-size: 13px;
+}
+#data-table tr:hover td { background: #fafbff; }
+
+.status { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status.active { background: #e8f5e9; color: #27ae60; }
+.status.pending { background: #fff3e0; color: #e67e22; }
+
+.loading, .error { text-align: center; color: #999; padding: 32px; }
+
+/* ── 分页 ──────────────────────────────────────────────── */
+
+.pagination {
+  display: flex; justify-content: center; align-items: center;
+  gap: 16px; margin-top: 16px; font-size: 13px;
+}
+.pagination button {
+  padding: 6px 16px; border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; cursor: pointer;
+}
+.pagination button:hover { background: #f0f0f0; }
+
+/* ── 设置页 ────────────────────────────────────────────── */
+
+.settings-page { padding: 24px; }
+.settings-page h2 { margin-bottom: 20px; }
+fieldset {
+  border: 1px solid #eee; border-radius: 8px; padding: 20px;
+  background: #fff;
+}
+fieldset legend { font-weight: 600; padding: 0 8px; }
